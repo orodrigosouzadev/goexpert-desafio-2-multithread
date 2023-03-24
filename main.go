@@ -34,7 +34,6 @@ type ApiCEPData struct {
 }
 
 func ViaCEP(ch chan ViaCEPData, cep string) {
-	cep = strings.Replace(cep, "-", "", 1)
 	req, err := http.NewRequest("GET", "https://viacep.com.br/ws/"+cep+"/json/", nil)
 	if err != nil {
 		panic(err)
@@ -93,8 +92,17 @@ func main() {
 		c1 := make(chan ViaCEPData)
 		c2 := make(chan ApiCEPData)
 
-		go ViaCEP(c1, cep)
-		go ApiCEP(c2, cep)
+		if strings.Contains(cep, string(".")) {
+			cep = strings.Replace(cep, ".", "", 1)
+		}
+
+		if strings.Contains(cep, string('-')) {
+			go ViaCEP(c1, strings.Replace(cep, "-", "", 1))
+			go ApiCEP(c2, cep)
+		} else {
+			go ViaCEP(c1, cep)
+			go ApiCEP(c2, cep[:5]+"-"+cep[5:])
+		}
 
 		select {
 		case msg := <-c1:
